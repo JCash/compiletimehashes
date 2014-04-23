@@ -2,8 +2,7 @@
 // MurmurHash3 was written by Austin Appleby, and is placed in the public
 // domain. The author hereby disclaims copyright to this source code.
 
-#ifndef _MURMURHASH3C_H_
-#define _MURMURHASH3C_H_
+#pragma once
 
 #include <cstring> // size_t
 
@@ -31,33 +30,33 @@ struct uint128_t
 {
 	constexpr uint128_t() : h1(0), h2(0) {}
 	constexpr uint128_t( uint64_t _h1, uint64_t _h2 ) : h1(_h1), h2(_h2) {}
-	constexpr bool operator == (const uint128_t& rhs) { return h1 == rhs.h1 && h2 == rhs.h2; }
-	constexpr bool operator != (const uint128_t& rhs) { return !(*this == rhs); }
+	constexpr bool operator == (const uint128_t& rhs) const { return h1 == rhs.h1 && h2 == rhs.h2; }
+	constexpr bool operator != (const uint128_t& rhs) const { return !(*this == rhs); }
 	uint64_t h1;
 	uint64_t h2;
 };
 
 
-class ConstString
+class ConstStringMM3
 {
 public:
 	template<size_t N>
-	constexpr ConstString( const char(&s)[N] ) : m_Str( s ), m_Size( N-1 ) {}
-	constexpr ConstString( const char* s, size_t len ) : m_Str( s ), m_Size( len ) {}
+	constexpr ConstStringMM3( const char(&s)[N] ) : m_Str( s ), m_Size( N-1 ) {}
+	constexpr ConstStringMM3( const char* s, size_t len ) : m_Str( s ), m_Size( len ) {}
   
-	constexpr size_t size() { return m_Size; }
+	constexpr size_t size() const { return m_Size; }
 
-	constexpr uint8_t operator[] (size_t n)
+	constexpr uint8_t operator[] (size_t n) const
 	{
 		return (uint8_t)m_Str[n];
 	}
 
-	constexpr uint8_t getU8(size_t n)
+	constexpr uint8_t getU8(size_t n) const
 	{
 		return (uint8_t)m_Str[n];
 	}
 
-	constexpr uint64_t getU64(size_t n)
+	constexpr uint64_t getU64(size_t n) const
 	{
 		return  uint64_t( (uint8_t)m_Str[n*8 + 0]) << 0 | uint64_t( (uint8_t)m_Str[n*8 + 1]) << 8 |
 		      	uint64_t( (uint8_t)m_Str[n*8 + 2]) << 16 | uint64_t( (uint8_t)m_Str[n*8 + 3]) << 24 |
@@ -65,12 +64,12 @@ public:
 		      	uint64_t( (uint8_t)m_Str[n*8 + 6]) << 48 | uint64_t( (uint8_t)m_Str[n*8 + 7]) << 56;
 	}
 
-	constexpr inline uint128_t hash128(uint64_t seed=0x1234567) const
+	constexpr inline uint128_t hash128(uint64_t seed=0) const
 	{
 		return _calcfinal( size(), _calcrest( *this, (size()/16)*16, size() & 15, _calcblocks( *this, size() / 16, 0, uint128_t(seed, seed)) ) );
 	}
 
-	constexpr inline uint64_t hash(uint64_t seed=0x1234567) const
+	constexpr inline uint64_t hash(uint64_t seed=0) const
 	{
 		return hash128(seed).h1;
 	}
@@ -103,7 +102,7 @@ private:
 	                    (_calcblock_h(value, h1, h2) + rotl64c(h2 ^ (_c1() * rotl64c(value.h2 * _c2(), 33)), 31)) * 5 + 0x38495ab5 );
 	}
 
-	constexpr inline static uint128_t _calcblocks( const ConstString cs, const int nblocks, const int index, const uint128_t accum)
+	constexpr inline static uint128_t _calcblocks( const ConstStringMM3 cs, const int nblocks, const int index, const uint128_t accum)
 	{
 		return nblocks == 0 ? accum : index == nblocks-1 ? _calcblock( uint128_t(cs.getU64(index*2+0), cs.getU64(index*2+1)), accum.h1, accum.h2 ) :
 														   _calcblocks( cs, nblocks, index+1, _calcblock( uint128_t(cs.getU64(index*2+0), cs.getU64(index*2+1)), accum.h1, accum.h2 ) );
@@ -124,17 +123,17 @@ private:
 		return uint128_t( _fmix_64(value.h1), _fmix_64(value.h2) );
 	}
 
-	constexpr static uint64_t _calcrest_xor(const ConstString cs, const int offset, const int index, const uint64_t k)
+	constexpr static uint64_t _calcrest_xor(const ConstStringMM3 cs, const int offset, const int index, const uint64_t k)
 	{
 	  return k ^ (uint64_t( cs[offset + index] ) << (index * 8));
 	}
 
-	constexpr static uint64_t _calcrest_k(const ConstString cs, const size_t offset, const size_t index, const size_t len, const uint64_t k)
+	constexpr static uint64_t _calcrest_k(const ConstStringMM3 cs, const size_t offset, const size_t index, const size_t len, const uint64_t k)
 	{
 	  return index == (len-1) ? _calcrest_xor(cs, offset, index, k) : _calcrest_xor(cs, offset, index, _calcrest_k(cs, offset, index+1, len, k) );
 	}
 
-	constexpr static uint128_t _calcrest(const ConstString cs, const uint64_t offset, const size_t restlen, const uint128_t value)
+	constexpr static uint128_t _calcrest(const ConstStringMM3 cs, const uint64_t offset, const size_t restlen, const uint128_t value)
 	{
 	  return restlen == 0  ? value :
 	         restlen > 8   ? uint128_t( value.h1 ^ (rotl64c( _calcrest_k( cs, offset, 0, restlen > 8 ? 8 : restlen, 0 ) * _c1(), 31) * _c2()),
@@ -156,50 +155,20 @@ private:
 //-----------------------------------------------------------------------------
 
 
-constexpr uint64_t MurmurHash3c_64(const ConstString& cs, uint64_t seed = 0x1234567)
+constexpr uint64_t MurmurHash3c_64(const ConstStringMM3& cs, uint64_t seed = 0)
 {
 	return cs.hash(seed);
 }
 
 constexpr uint64_t operator "" _hash(const char* str, size_t len)
 {
-	return ConstString(str, len).hash();
+	return ConstStringMM3(str, len).hash();
 }
 
 inline void MurmurHash3c_x64_128( const char* key, int len, const uint32_t seed, void* out )
 {
-	((uint128_t*)out)[0] = ConstString( key, len ).hash128(seed);
+	((uint128_t*)out)[0] = ConstStringMM3( key, len ).hash128(seed);
 }
 
-#if defined(DEBUG)
-class StringHash
-{
-public:
-	constexpr StringHash(uint64_t hash, const char* str) : m_Hash(hash), m_String(str) {}
-	constexpr operator uint64_t () const { return m_Hash; }
-	constexpr operator const char* () const { return m_String; }
-private:
-	uint64_t m_Hash;
-	const char* const m_String;
-};
 
-constexpr StringHash operator "" _shash(const char* str, size_t len)
-{
-	return StringHash( ConstString(str, len).hash(), str );
-}
-
-#else
-
-typedef uint64_t StringHash;
-
-constexpr StringHash operator "" _shash(const char* str, size_t len)
-{
-	return ConstString(str, len).hash();
-}
-
-#endif
-
-
-
-#endif // _MURMURHASH3C_H_
 
