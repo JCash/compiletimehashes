@@ -14,7 +14,7 @@ $COMPILER $CXXFLAGS -c murmur3/MurmurHash3.cpp -o $BUILDDIR/murmur3_darwin.o
 $LINKER $LDFLAGS -static -o $BUILDDIR/libmurmur3.a $BUILDDIR/*.o
 
 $COMPILER -std=c++11 -g -O3 -stdlib=libc++ -lc \
-        -Isource \
+        -Iinclude \
         -Imurmur3 \
         -I. \
         -L${BUILDDIR} \
@@ -29,7 +29,7 @@ for number in "${numbers[@]}"
 do
 	echo Compiling ${number} hashes   
 	time $COMPILER -std=c++11 -g -O3 -stdlib=libc++ -lc \
-	        -Isource \
+	        -Iinclude \
 	        -Imurmur3 \
 	        -I. \
 	        -L${BUILDDIR} \

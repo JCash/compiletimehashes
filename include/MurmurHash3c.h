@@ -160,10 +160,12 @@ constexpr uint64_t MurmurHash3c_64(const ConstStringMM3& cs, uint64_t seed = 0)
 	return cs.hash(seed);
 }
 
+#ifdef HASHES_USE_STRINGLITERALS
 constexpr uint64_t operator "" _hash(const char* str, size_t len)
 {
 	return ConstStringMM3(str, len).hash();
 }
+#endif
 
 inline void MurmurHash3c_x64_128( const char* key, int len, const uint32_t seed, void* out )
 {
